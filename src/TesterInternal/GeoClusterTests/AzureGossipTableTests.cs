@@ -9,8 +9,6 @@ using Orleans.Runtime.MultiClusterNetwork;
 using Orleans.TestingHost;
 using UnitTests.StorageTests;
 using Orleans.MultiCluster;
-using UnitTests.Tester;
-using UnitTests.TestHelper;
 
 namespace Tests.GeoClusterTests
 {
