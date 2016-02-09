@@ -145,7 +145,7 @@ namespace Orleans.Runtime.MultiClusterNetwork
             try
             {
                 await instance.storage.InitTableAsync()
-                    .WithTimeout(initTimeout);
+                    .WithTimeout(initTimeout).ConfigureAwait(false);
             }
             catch (TimeoutException te)
             {
@@ -167,7 +167,7 @@ namespace Orleans.Runtime.MultiClusterNetwork
 
         internal async Task<List<Tuple<GossipTableEntry, string>>> FindAllGossipTableEntries()
         {
-            var queryResults = await storage.ReadAllTableEntriesForPartitionAsync(this.GlobalServiceId);
+            var queryResults = await storage.ReadAllTableEntriesForPartitionAsync(this.GlobalServiceId).ConfigureAwait(false);
 
             return queryResults.ToList();
         }
@@ -196,7 +196,7 @@ namespace Orleans.Runtime.MultiClusterNetwork
                 Comment = configuration.Comment ?? ""
             };
 
-            return (await TryCreateTableEntryAsync("TryCreateConfigurationEntryAsync", entry) != null);
+            return (await TryCreateTableEntryAsync("TryCreateConfigurationEntryAsync", entry).ConfigureAwait(false) != null);
         }
 
 
@@ -212,7 +212,7 @@ namespace Orleans.Runtime.MultiClusterNetwork
             entry.Clusters = string.Join(",", configuration.Clusters);
             entry.Comment = configuration.Comment ?? "";
 
-            return (await TryUpdateTableEntryAsync("TryUpdateConfigurationEntryAsync", entry, eTag) != null);
+            return (await TryUpdateTableEntryAsync("TryUpdateConfigurationEntryAsync", entry, eTag).ConfigureAwait(false) != null);
         }
 
         internal async Task<bool> TryCreateGatewayEntryAsync(GatewayEntry entry)
@@ -225,7 +225,7 @@ namespace Orleans.Runtime.MultiClusterNetwork
                 GossipTimestamp = entry.HeartbeatTimestamp
             };
 
-            return (await TryCreateTableEntryAsync("TryCreateGatewayEntryAsync", row) != null);
+            return (await TryCreateTableEntryAsync("TryCreateGatewayEntryAsync", row).ConfigureAwait(false) != null);
         }
 
 
@@ -238,7 +238,7 @@ namespace Orleans.Runtime.MultiClusterNetwork
             row.Status = entry.Status.ToString();
             row.GossipTimestamp = entry.HeartbeatTimestamp;
 
-            return (await TryUpdateTableEntryAsync("TryUpdateGatewayEntryAsync", row, eTag) != null);
+            return (await TryUpdateTableEntryAsync("TryUpdateGatewayEntryAsync", row, eTag).ConfigureAwait(false) != null);
         }
 
         internal async Task<bool> TryDeleteGatewayEntryAsync(GossipTableEntry row, string eTag)
@@ -247,17 +247,16 @@ namespace Orleans.Runtime.MultiClusterNetwork
             //Debug.Assert(row.PartitionKey == GlobalServiceId);
             //Debug.Assert(row.RowKey == GossipTableEntry.ConstructRowKey(row.SiloAddress, row.ClusterId));
 
-            return await TryDeleteTableEntryAsync("TryDeleteGatewayEntryAsync", row, eTag);
+            return await TryDeleteTableEntryAsync("TryDeleteGatewayEntryAsync", row, eTag).ConfigureAwait(false);
         }
 
         internal async Task<int> DeleteTableEntries()
         {
-
-            var entries = await storage.ReadAllTableEntriesForPartitionAsync(GlobalServiceId);
+            var entries = await storage.ReadAllTableEntriesForPartitionAsync(GlobalServiceId).ConfigureAwait(false);
             var entriesList = new List<Tuple<GossipTableEntry, string>>(entries);
             if (entriesList.Count <= AzureTableDefaultPolicies.MAX_BULK_UPDATE_ROWS)
             {
-                await storage.DeleteTableEntriesAsync(entriesList);
+                await storage.DeleteTableEntriesAsync(entriesList).ConfigureAwait(false);
             }
             else
             {
@@ -266,7 +265,7 @@ namespace Orleans.Runtime.MultiClusterNetwork
                 {
                     tasks.Add(storage.DeleteTableEntriesAsync(batch));
                 }
-                await Task.WhenAll(tasks);
+                await Task.WhenAll(tasks).ConfigureAwait(false);
             }
             return entriesList.Count;
         }
@@ -279,7 +278,7 @@ namespace Orleans.Runtime.MultiClusterNetwork
         {
             try
             {
-                return await storage.UpdateTableEntryAsync(data, dataEtag);
+                return await storage.UpdateTableEntryAsync(data, dataEtag).ConfigureAwait(false);
             }
             catch (Exception exc)
             {
@@ -301,7 +300,7 @@ namespace Orleans.Runtime.MultiClusterNetwork
         {
             try
             {
-                return await storage.CreateTableEntryAsync(data);
+                return await storage.CreateTableEntryAsync(data).ConfigureAwait(false);
             }
             catch (Exception exc)
             {
@@ -322,7 +321,7 @@ namespace Orleans.Runtime.MultiClusterNetwork
         {
             try
             {
-                await storage.DeleteTableEntryAsync(data, etag);
+                await storage.DeleteTableEntryAsync(data, etag).ConfigureAwait(false);
                 return true;
             }
             catch (Exception exc)
