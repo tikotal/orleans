@@ -3,7 +3,6 @@ using Orleans.AzureUtils;
 using Orleans.MultiCluster;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Runtime.CompilerServices;
@@ -11,17 +10,15 @@ using System.Threading.Tasks;
 
 namespace Orleans.Runtime.MultiClusterNetwork
 {
-    // 
-    //  low-level representation details & functionality for Azure-Table-Based Gossip Channels
-    //  to go into Azure Utils?
-
+    /// <summary>
+    /// Low level representation details and functionality for Azure-Table-Based Gossip Channels
+    /// </summary>
     internal class GossipTableEntry : TableEntity
     {
         // used for partitioning table
         internal string GlobalServiceId { get { return PartitionKey; } }
 
         public DateTime GossipTimestamp { get; set; }   // timestamp of gossip entry
-
 
         #region gateway entry
 
@@ -41,7 +38,6 @@ namespace Orleans.Runtime.MultiClusterNetwork
 
         #endregion
 
-
         #region configuration entry
 
         public string Clusters { get; set; }   // comma-separated list of clusters
@@ -50,47 +46,42 @@ namespace Orleans.Runtime.MultiClusterNetwork
 
         #endregion
 
-
         internal const string CONFIGURATION_ROW = "CONFIG"; // Row key for configuration row.
 
-        internal const char SEPARATOR = ','; // safe because clusterid cannot contain commas
+        private const string Separator = ","; // safe because clusterid cannot contain commas
+        private readonly static char[] SeparatorChars = Separator.ToCharArray();
+        internal const string ClustersListSeparator = ","; // safe because clusterid cannot contain commas
+        private readonly static char[] ClustersListSeparatorChars = ClustersListSeparator.ToCharArray();
+        private const string RowKeyFormat = "{0}"+ Separator + "{1}" + Separator + "{2}" + Separator + "{3}";
 
         public static string ConstructRowKey(SiloAddress silo, string clusterid)
         {
-            return String.Format("{1}{0}{2}{0}{3}{0}{4}", SEPARATOR, clusterid, silo.Endpoint.Address, silo.Endpoint.Port, silo.Generation);
+            return String.Format(RowKeyFormat, clusterid, silo.Endpoint.Address, silo.Endpoint.Port, silo.Generation);
         }
-
-
 
         internal void UnpackRowKey()
         {
-            var debugInfo = "UnpackRowKey";
+            const string debugInfo = "UnpackRowKey";
             try
             {
-                int idx3 = RowKey.LastIndexOf(SEPARATOR);
-                int idx2 = RowKey.LastIndexOf(SEPARATOR, idx3 - 1);
-                int idx1 = RowKey.LastIndexOf(SEPARATOR, idx2 - 1);
+                var segments = RowKey.Split(SeparatorChars, 4);
 
-                ClusterId = RowKey.Substring(0, idx1);
-                var addressstr = RowKey.Substring(idx1 + 1, idx2 - idx1 - 1);
-                var portstr = RowKey.Substring(idx2 + 1, idx3 - idx2 - 1);
-                var genstr = RowKey.Substring(idx3 + 1);
-                Address = IPAddress.Parse(addressstr);
-                Port = Int32.Parse(portstr);
-                Generation = Int32.Parse(genstr);
+                ClusterId = segments[0];
+                Address = IPAddress.Parse(segments[1]);
+                Port = Int32.Parse(segments[2]);
+                Generation = Int32.Parse(segments[3]);
 
                 this.SiloAddress = SiloAddress.New(new IPEndPoint(Address, Port), Generation);
             }
             catch (Exception exc)
             {
-                throw new AggregateException("Error from " + debugInfo, exc);
+                throw new FormatException("Error from " + debugInfo, exc);
             }
         }
 
         internal MultiClusterConfiguration ToConfiguration()
         {
-            string clusterliststring = Clusters;
-            var clusterlist = clusterliststring.Split(',');
+            var clusterlist = Clusters.Split(ClustersListSeparatorChars, StringSplitOptions.RemoveEmptyEntries);
             return new MultiClusterConfiguration(GossipTimestamp, clusterlist, Comment ?? "");
         }
 
@@ -165,14 +156,12 @@ namespace Orleans.Runtime.MultiClusterNetwork
             return instance;
         }
 
-
         internal async Task<List<Tuple<GossipTableEntry, string>>> FindAllGossipTableEntries()
         {
             var queryResults = await storage.ReadAllTableEntriesForPartitionAsync(this.GlobalServiceId).ConfigureAwait(false);
 
             return queryResults.ToList();
         }
-
 
         internal Task<Tuple<GossipTableEntry, string>> ReadConfigurationEntryAsync()
         {
@@ -193,13 +182,12 @@ namespace Orleans.Runtime.MultiClusterNetwork
                 PartitionKey = GlobalServiceId,
                 RowKey = GossipTableEntry.CONFIGURATION_ROW,
                 GossipTimestamp = configuration.AdminTimestamp,
-                Clusters = string.Join(",", configuration.Clusters),
+                Clusters = string.Join(GossipTableEntry.ClustersListSeparator, configuration.Clusters),
                 Comment = configuration.Comment ?? ""
             };
 
             return (await TryCreateTableEntryAsync(entry).ConfigureAwait(false) != null);
         }
-
 
         internal async Task<bool> TryUpdateConfigurationEntryAsync(MultiClusterConfiguration configuration, GossipTableEntry entry, string eTag)
         {
@@ -210,7 +198,7 @@ namespace Orleans.Runtime.MultiClusterNetwork
             //Debug.Assert(entry.RowKey == GossipTableEntry.CONFIGURATION_ROW);
 
             entry.GossipTimestamp = configuration.AdminTimestamp;
-            entry.Clusters = string.Join(",", configuration.Clusters);
+            entry.Clusters = string.Join(GossipTableEntry.ClustersListSeparator, configuration.Clusters);
             entry.Comment = configuration.Comment ?? "";
 
             return (await TryUpdateTableEntryAsync(entry, eTag).ConfigureAwait(false) != null);
@@ -337,6 +325,5 @@ namespace Orleans.Runtime.MultiClusterNetwork
                 throw;
             }
         }
-
     }
 }
