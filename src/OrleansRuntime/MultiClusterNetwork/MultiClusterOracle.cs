@@ -379,7 +379,7 @@ namespace Orleans.Runtime.MultiClusterNetwork
 
             var result = new Dictionary<SiloAddress, MultiClusterConfiguration>();
 
-            if (! MultiClusterConfiguration.SameAs(localData.Current.Configuration, expected))
+            if (! MultiClusterConfiguration.Equals(localData.Current.Configuration, expected))
                 result.Add(this.Silo, localData.Current.Configuration);
 
             if (forwardLocally)
