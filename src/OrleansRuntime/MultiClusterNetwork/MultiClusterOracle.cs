@@ -107,13 +107,17 @@ namespace Orleans.Runtime.MultiClusterNetwork
             this.injectedConfig = config;
             PushChanges();
 
-            // wait for the gossip channel tasks and reproduce any exceptions
+            // wait for the gossip channel tasks and aggregate exceptions
+            var exceptions = new List<Exception>();
             foreach (var ct in this.channelTasks.Values)
             {
                 await ct.Task;
                 if (ct.LastException != null)
-                    throw ct.LastException;
+                    exceptions.Add(ct.LastException);
             }
+
+            if (exceptions.Count > 0)
+                throw new AggregateException(exceptions);
         }
 
         public void SiloStatusChangeNotification(SiloAddress updatedSilo, SiloStatus status)
