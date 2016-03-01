@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Orleans.Runtime.MultiClusterNetwork
 {
-    class MultiClusterOracleData : IMultiClusterGossipData
+    class MultiClusterOracleData 
     {
         private volatile MultiClusterData localData;  // immutable, can read without lock
 
