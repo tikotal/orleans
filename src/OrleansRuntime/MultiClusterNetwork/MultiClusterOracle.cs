@@ -19,12 +19,11 @@ namespace Orleans.Runtime.MultiClusterNetwork
         private ISiloStatusOracle siloStatusOracle;
         private MultiClusterConfiguration injectedConfig;
 
-        private string globalServiceId;
         private string clusterId;
 
         private IReadOnlyList<string> defaultMultiCluster;
 
-        public MultiClusterOracle(SiloAddress silo, string clusterid, List<IGossipChannel> sources, GlobalConfiguration config)
+        public MultiClusterOracle(SiloAddress silo, List<IGossipChannel> sources, GlobalConfiguration config)
             : base(Constants.MultiClusterOracleId, silo)
         {
             if (sources == null) throw new ArgumentNullException("sources");
@@ -33,7 +32,6 @@ namespace Orleans.Runtime.MultiClusterNetwork
             logger = TraceLogger.GetLogger("MultiClusterOracle");
             gossipChannels = sources;
             localData = new MultiClusterOracleData(logger);
-            globalServiceId = config.GlobalServiceId;
             clusterId = config.ClusterId;
             defaultMultiCluster = config.DefaultMultiCluster;  
             random = new Random(silo.GetHashCode());
