@@ -126,8 +126,6 @@ namespace Orleans.Runtime.MultiClusterNetwork
 
                 this.siloStatusOracle = oracle;
 
-                this.siloStatusOracle.SubscribeToSiloStatusEvents(this);
-
                 // startup: pull all the info from the tables, then inject default multi cluster if none found
                 foreach (var ch in gossipChannels)
                 {
@@ -140,6 +138,8 @@ namespace Orleans.Runtime.MultiClusterNetwork
                     this.injectedConfig = new MultiClusterConfiguration(DateTime.UtcNow, defaultMultiCluster, "DefaultMultiCluster");
                     logger.Info("No configuration found. Using default configuration {0} ", this.injectedConfig);
                 }
+
+                this.siloStatusOracle.SubscribeToSiloStatusEvents(this);
 
                 PushChanges();
 
