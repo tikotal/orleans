@@ -95,6 +95,9 @@ namespace Orleans.Runtime.MultiClusterNetwork
         public async Task InjectMultiClusterConfiguration(MultiClusterConfiguration config)
         {
             this.injectedConfig = config;
+
+            logger.Info("Starting MultiClusterConfiguration Injection, configuration={0} ", config);
+
             PushChanges();
 
             // wait for the gossip channel tasks and aggregate exceptions
@@ -105,6 +108,8 @@ namespace Orleans.Runtime.MultiClusterNetwork
                 .Where(ct => ct.LastException != null)
                 .Select(ct => ct.LastException)
                 .ToList();
+
+            logger.Info("Completed MultiClusterConfiguration Injection, {0} exceptions", exceptions.Count);
 
             if (exceptions.Count > 0)
                 throw new AggregateException(exceptions);
