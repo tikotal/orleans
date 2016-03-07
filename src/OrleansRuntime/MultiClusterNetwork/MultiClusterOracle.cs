@@ -185,12 +185,18 @@ namespace Orleans.Runtime.MultiClusterNetwork
 
             var iAmGateway = activeLocalGateways.Contains(Silo);
 
+            // collect deltas that need to be pushed to all other gateways. 
+            // Most of the time, this will contain just zero or one change.
             var deltas = new MultiClusterData();
 
+            // Determine local status, and add to deltas if it changed
             InjectLocalStatus(iAmGateway, ref deltas);
 
+            // Determine if admin has injected a new configuration, and add to deltas if that is the case
             InjectConfiguration(ref deltas);
 
+            // Determine if there are some stale gateway entries of this cluster that should be demoted, 
+            // and add those demotions to deltas
             if (iAmGateway)
                 DemoteLocalGateways(activeLocalGateways, ref deltas);
 
