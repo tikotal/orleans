@@ -107,7 +107,7 @@ Change App.config enable the recommended server style garbage collection
 #### Host – OrleansConfiguration.xml
 Within the Host project, add an XML file that will be used for cluster configuration called OrleansConfiguration.xml
 
-Make sure it is set to Copy to Output directory:
+<b> Important! </b> Make sure it is set to Copy to Output directory: 
 
 ``` xml
 <?xml version="1.0" encoding="utf-8"?>
